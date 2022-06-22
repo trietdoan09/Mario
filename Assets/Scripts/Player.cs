@@ -1,19 +1,24 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
+    
+    //
     private float Speed; //toc do animator cua mario
     private bool Ground = true; // mario co dung tren dat hay khong
-    private float Jumping = 450; // toc do nhay cua mario
-    private float JumpLow = 5f; // khi mario nhan nhay va buong khong giu
-    private float Gravity = 5f; // trong luc de mario roi nhanh hon
+    private float Jumping = 480; // toc do nhay cua mario
+    private float JumpLow = 15f; // khi mario nhan nhay va buong khong giu
+    private float Gravity = 10f; // trong luc de mario roi nhanh hon
     private bool Navigation = false;   // co dang chuyen huong khong
     ///chay nhanh va ban
     private float maxSpeed = 12f;
     private float hold = 0.2f;
+    private float delay = 0.1f;
     private float press = 0;
+    private float fireTime1, fireTime2;
     /// di chuyen va chuyen huong
     private Rigidbody2D rd;
     private float x;
@@ -28,7 +33,12 @@ public class Player : MonoBehaviour
     [SerializeField] private AudioClip hightJump;
     private AudioSource audio;
     //chet
-    private bool die = false;
+    private Vector2 dp;
+    //
+    private Vector2 vitriban;
+    //respawn;
+    private int reSpawn;
+    public bool reset = false;
     void Start()
     {
         rd = GetComponent<Rigidbody2D>(); 
@@ -43,6 +53,8 @@ public class Player : MonoBehaviour
         animator.SetBool("Ground", Ground);
         animator.SetBool("Navigation", Navigation);
         Jump();
+        fireTime1 = 0.5f; /// thoi gian coldown moi qua cau se tang khi gia tri nay tang len
+        fireTime2 = 0f;
         FireandsPrint();
         if(Transfiguration==true)
         {
@@ -69,17 +81,14 @@ public class Player : MonoBehaviour
                         Transfiguration = false;
                         break;
                     }
-                case 3:
-                    {
-                        StartCoroutine(SSRMariotoSRMario());
-                        Audio("smb_pipe");
-                        Transfiguration = false;
-                        break;
-                    }
+                
                 default:Transfiguration=false; break;
             }
         }
-        MarioDie();
+        if (gameObject.transform.position.y < -10f)
+        {
+            Destroy(gameObject);
+        }
     }
     private void FixedUpdate()
     {
@@ -91,7 +100,6 @@ public class Player : MonoBehaviour
         float move = Input.GetAxis("Horizontal"); // horizontal : di chuyen ve ben phai x duong, di chuyen ve ben trai x am
         rd.velocity = new Vector2(moveSpeed * move, rd.velocity.y);
         Speed = Mathf.Abs(moveSpeed * move); // lay gia tri tuyet doi cua speed de value khong bi am vi dk trong animator set lon hon 0
-
         if (move > 0 && moveRight) //dk move phai di chuyen ve truc duong va no co phai moveright khong neu thoa thi di chuyen binh thuong
             LeftOrRight();
         else if (move < 0 && !moveRight)// dk move di chuyen ve truc am va no khong phai moveRight nen phai xoay chieu animation lai roi moi di chuyen
@@ -114,23 +122,15 @@ public class Player : MonoBehaviour
         Navigation = false;
     }
 
-    void MarioDie()
+    public void MarioDie()
     {
-        if(gameObject.transform.position.y<-10f)
-        {
-            StartCoroutine(Die());
-            Audio("smb_mariodie");
-            Destroy(gameObject);
-        }
-
+        dp = transform.localPosition;
+        GameObject MarioDie = (GameObject)Instantiate(Resources.Load("Prefab/MarioDie"));
+        MarioDie.transform.localPosition = dp;
+        Destroy(gameObject);
+        reset = true;
     }
-    IEnumerator Die()
-    {
-        die = true;
-        yield return new WaitForSeconds(5f);
-        die = false;
 
-    }
     private void HightJump()
     {
         audio.PlayOneShot(hightJump);
@@ -148,7 +148,7 @@ public class Player : MonoBehaviour
         if(rd.velocity.y<0)
         {
             
-            rd.velocity += Vector2.up * Physics2D.gravity.y * (Gravity - 1) * Time.deltaTime; // velocity bang luc huong len cua vector2 nhan voi luc hut theo y va nhan voi luc hut roi xuong tinh theo deltatime
+            rd.velocity += Vector2.up * Physics2D.gravity.y * (Gravity /*- 1*/) * Time.deltaTime; // velocity bang luc huong len cua vector2 nhan voi luc hut theo y va nhan voi luc hut roi xuong tinh theo deltatime
             
         }
         else if(rd.velocity.y>0 && !Input.GetKey(KeyCode.UpArrow)) //neu an va tha thi mario se khogn nhay cao duoc 
@@ -176,18 +176,33 @@ public class Player : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.LeftShift))
         {
-            press += Time.deltaTime;
-            if(press<hold)
+            
+            if (level == 2)
             {
-                print("fire");
-            }else
-            {
-                moveSpeed = moveSpeed * 1.01f;
-                if (moveSpeed > maxSpeed)
-                    moveSpeed = maxSpeed;
+                fireTime2 += Time.time;
+                if (fireTime2 - fireTime1 >= delay)
+                {
+                    
+                    fireTime1 = Time.time;
+                    GameObject MarioFire = null;
+                    MarioFire = (GameObject)Instantiate(Resources.Load("Prefab/Fire"));
+                    MarioFire.transform.SetParent(this.transform.parent);
+                    GameObject Huongdan = null;
+                    Huongdan = gameObject.transform.Find("HuongDan").gameObject;
+                    if (Huongdan.transform.position.x-gameObject.transform.localPosition.x>0)
+                        MarioFire.transform.localPosition = new Vector2(transform.localPosition.x + 1f, transform.localPosition.y + 1f);
+                    else
+                        MarioFire.transform.localPosition = new Vector2(transform.localPosition.x - 1f, transform.localPosition.y + 1f);
+
+                    delay = Time.time;
+                }
+                
             }
+            
         }
     }
+
+  
 
     IEnumerator MarioToSRMario() // mario an nam
     {

@@ -6,6 +6,12 @@ TagManager:
   tags:
   - Ground
   - Drop
+  - ColiP
+  - Enemy
+  - Koopas
+  - Mushroom
+  - fire
+  - HuongDan
   layers:
   - Default
   - TransparentFX

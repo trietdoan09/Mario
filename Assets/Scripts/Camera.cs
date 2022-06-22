@@ -7,7 +7,7 @@ public class Camera : MonoBehaviour
 
     private Transform Player;
     private float minX = 0f, maxX = 183.58f;
-
+    Mariodie Mariodie;
 
     void Start()
     {
@@ -15,7 +15,7 @@ public class Camera : MonoBehaviour
     }
     void Update()
     {
-        if(Player!=null)
+        if(Player)
         {
             Vector3 vector3 = transform.position;
             vector3.x = Player.position.x;
